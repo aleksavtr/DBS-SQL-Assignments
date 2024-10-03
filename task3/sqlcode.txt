@@ -1,0 +1,113 @@
+CREATE SCHEMA IF NOT EXISTS new_schema;
+
+CREATE TABLE new_schema.Zone (
+    ID SERIAL PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL UNIQUE,
+    Capacity INT NOT NULL CHECK (Capacity >= 0)
+);
+CREATE TABLE new_schema.Item (
+    ID SERIAL PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Status VARCHAR(100) NOT NULL,
+    Owner VARCHAR(50) NOT NULL,
+    Qual_check BOOLEAN NOT NULL DEFAULT FALSE,
+    ZoneID INT not null,
+    FOREIGN KEY (ZoneID)  REFERENCES new_schema.Zone(ID)
+);
+
+CREATE TABLE new_schema.Category (
+    ID SERIAL PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL UNIQUE,
+    Description TEXT,
+    Item_ID INT NOT NULL,
+    FOREIGN KEY (Item_ID) REFERENCES new_schema.Item(ID)
+);
+
+CREATE TABLE new_schema.Exhibition (
+    ID SERIAL PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    StartDate TIMESTAMP NOT NULL,
+    EndDate TIMESTAMP NOT NULL,
+    Status VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE new_schema.Loans (
+    ID SERIAL PRIMARY KEY,
+    Item_id INT NOT NULL,
+    DateLoan TIMESTAMP NOT NULL,
+    ReturnDate TIMESTAMP NOT NULL,
+    Real_ret_date TIMESTAMP,
+    Borrower VARCHAR(100) NOT NULL,
+    Is_permanent BOOLEAN NOT NULL,
+    FOREIGN KEY (Item_id) REFERENCES new_schema.Item(ID)
+);
+
+CREATE TABLE new_schema.QualityCheck (
+    ID SERIAL PRIMARY KEY,
+    Item_id INT NOT NULL,
+    DateSent TIMESTAMP NOT NULL,
+    ReturnDate TIMESTAMP NOT NULL,
+    StartDate TIMESTAMP NOT NULL,
+    EndDate TIMESTAMP NOT NULL,
+    ResultState BOOLEAN NOT NULL,
+    FOREIGN KEY (Item_id) REFERENCES new_schema.Item(ID)
+);
+
+
+CREATE TABLE new_schema.ExhibitionHistory (
+    ID SERIAL PRIMARY KEY,
+    Exhibition_id INT NOT NULL,
+    StartDate TIMESTAMP NOT NULL,
+    EndDate TIMESTAMP NOT NULL,
+    Overview TEXT,
+    Is_recurring BOOLEAN NOT NULL,
+    FOREIGN KEY (Exhibition_id) REFERENCES new_schema.Exhibition(ID)
+);
+
+CREATE TABLE new_schema.ExhibitionZone (
+    ID_Zone INT NOT NULL,
+    ID_Exh INT NOT NULL,
+    Status VARCHAR(100) NOT NULL,
+    FOREIGN KEY (ID_Zone) REFERENCES new_schema.Zone(ID),
+    FOREIGN KEY (ID_Exh) REFERENCES new_schema.Exhibition(ID)
+);
+
+CREATE TABLE new_schema.Exhibition_Item (
+    Item_id INT NOT NULL,
+    Exhibition_Id INT NOT NULL,
+    Status VARCHAR(50) NOT NULL,
+    FOREIGN KEY (Item_id) REFERENCES new_schema.Item(ID),
+    FOREIGN KEY (Exhibition_Id) REFERENCES new_schema.Exhibition(ID)
+);
+
+
+
+
+--Scenáre pre spracovanie požadovaných procesov
+--1. Naplánovanie expozície
+INSERT INTO new_schema.ExhibitionZone (ID_Zone, ID_Exh, Status)
+VALUES (1, 1, 'active');
+
+INSERT INTO new_schema.Exhibition (Name, StartDate, EndDate, Status)
+VALUES ('Impresionisti', '2023-06-01 00:00:00', '2023-12-31 23:59:59', 'planned');
+
+--2. Vkladanie nového exempláru
+INSERT INTO new_schema.Item (Name, Status, Owner, Qual_check, ZoneID)
+VALUES ('Nazov','Stav', 'Moj muzeum', TRUE, 2);
+
+--3. Presun exempláru do inej zóny
+UPDATE new_schema.Item
+SET ZoneID = 3
+WHERE ID = 1; --Predpokladám, že ID exemplára je 1
+
+--4. Prevzatie exemplára z inej inštitúcie
+INSERT INTO new_schema.Loans (Item_id, Dateloan, Returndate, Real_ret_date, Borrower, is_permanent)
+VALUES (1, '2023-01-01 00:00:00', '-', '-', 'Nas muzeum', TRUE);
+
+UPDATE new_schema.Item
+SET Owner = 'Naše múzeum'
+WHERE ID = 1; -- Predpokladám, že ID exemplára je 1
+
+--5. Zapožičanie exempláru inej inštitúcii
+INSERT INTO new_schema.Loans (Item_id, Dateloan, Returndate, Borrower, is_permanent)
+VALUES (2, '2023-05-01 00:00:00', '2023-12-01 00:00:00', 'Iné múzeum', FALSE);

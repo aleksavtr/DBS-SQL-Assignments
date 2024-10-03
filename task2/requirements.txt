@@ -1,0 +1,7 @@
+uvicorn
+fastapi
+psycopg2-binary
+tzdata
+pydantic-settings
+asyncpg
+databases
